@@ -101,5 +101,5 @@ let fetchStreamData = (options) => {
 
 //Storing in json files allow us to avoid express app. We just periodically pick up from stream.json file.
 // Storing in ES lets us periodically query for recent most data. Requires express app, etc. 
-// runHistorical();
+//runHistorical();
 runStream();
