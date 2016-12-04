@@ -65,15 +65,16 @@ let fetchStreamData = (options) => {
             try {
                 let results = JSON.parse(body);
                 let most_recent_result = results[0]; //first 
+                let next_options;
                 if (most_recent_result) {
                     let last_id = most_recent_result.id;
-                    let next_options = _.merge(options, {url: config.api_host + '?last_id=' + last_id});
+                    next_options = _.merge(options, {url: config.api_host + '?last_id=' + last_id});
                 } else {
                     //no results
-                    let next_options = options;
+                    next_options = options;
                 }
                 
-                console.log(last_id, results.length);
+                console.log(results.length);
                 var time_period = 10000;
                 //https://github.com/jprichardson/node-jsonfile#writefilefilename-obj-options-callback
                 
@@ -82,10 +83,10 @@ let fetchStreamData = (options) => {
                     var file = './stream.json';
                     jsonfile.writeFile(file, results, {flag: 'a'}, function (json_err) {
                         if (json_err) console.error(json_err);
-                        setTimeout(fetchStreamData(next_options), time_period);
+                        setTimeout(() => {fetchStreamData(next_options)}, time_period);
                     });
                 } else {
-                    setTimeout(fetchStreamData(next_options), time_period);
+                    setTimeout(() => {fetchStreamData(next_options)}, time_period);
                 }
 
                 
