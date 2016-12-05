@@ -32,9 +32,13 @@ let fetchHistoricalData = (options) => {
                 //https://github.com/jprichardson/node-jsonfile#writefilefilename-obj-options-callback
                 
                 //IMP: Either append and update single json file OR OR OR bulk upload to ES
-                jsonfile.writeFile(file, results, {flag: 'a'}, function (json_err) {
-                    if (json_err) console.error(json_err);
-                    fetchHistoricalData(next_options);
+                jsonfile.readFile(file, function(err, old_results) {
+                    let updated_results = (old_results) ? _.concat(old_results, results) : results;
+                    console.log('historical data size',updated_results.length);
+                    jsonfile.writeFile(file, updated_results, function (json_err) {
+                        if (json_err) console.error(json_err);
+                        fetchHistoricalData(next_options);
+                    });
                 });
                 
             } catch(err) {
@@ -54,11 +58,13 @@ let runStream = () => {
         Authorization: 'Token token="'+config.api_token+'"'
     }
     let options = {url, headers}
+    //Reset stream data
+    jsonfile.writeFileSync('./stream.json', []); 
     fetchStreamData(options);
 }
 
 let fetchStreamData = (options) => {
-    console.log('fetch data');
+    console.log('fetch data - ', options.url);
     //https://github.com/request/request#custom-http-headers
     request(options, function (error, response, body) {
         if (!error && body) {
@@ -81,10 +87,14 @@ let fetchStreamData = (options) => {
                 //TODO: check empty results response and see if this code keeps repeating
                 if (results.length > 0) {
                     var file = './stream.json';
-                    jsonfile.writeFile(file, results, {flag: 'a'}, function (json_err) {
-                        if (json_err) console.error(json_err);
-                        setTimeout(() => {fetchStreamData(next_options)}, time_period);
-                    });
+                    jsonfile.readFile(file, function(err, old_results) {
+                        let updated_results = (old_results) ? _.concat(results, old_results) : results;
+                        console.log('streamed data size',updated_results.length);
+                        jsonfile.writeFile(file, updated_results, function (json_err) {
+                            if (json_err) console.error(json_err);
+                            setTimeout(() => {fetchStreamData(next_options)}, time_period);
+                        });
+                    })
                 } else {
                     setTimeout(() => {fetchStreamData(next_options)}, time_period);
                 }
@@ -102,4 +112,9 @@ let fetchStreamData = (options) => {
 //Storing in json files allow us to avoid express app. We just periodically pick up from stream.json file.
 // Storing in ES lets us periodically query for recent most data. Requires express app, etc. 
 //runHistorical();
-runStream();
+//runStream();
+
+module.exports = {
+    runHistorical,
+    runStream
+};
