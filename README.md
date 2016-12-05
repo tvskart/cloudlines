@@ -2,9 +2,14 @@
 
 Brief walkthrough - 
 
-index.js file has a runstream function that essentialy populates a data.json file with latest data.
-How api works? returns recent most 100 mentions. pass a last_id value, returns 100 mentions since tht id.
+type npm start
+what happens?
+    server starts, stream.json keeps getting updated every 10 seconds..
 
-We could upload data to ES instance, etc. or just pick from json file for now.
-Can get started on index.html to visualize the data (static). 
-Will add code later to stream on client side the recent most data EVERY 10 sec or so. might convert to express app for this scenario..
+hit url - http://localhost:3000/
+what is shown? 
+    monitoring app with debug details.
+    can view global variables historical_data or stream_data on console.
+    
+How api works? returns recent most 100 mentions. pass a last_id value, returns 100 mentions since tht id.
+Database? We could upload data to ES instance, etc. or just pick from json file for now.
