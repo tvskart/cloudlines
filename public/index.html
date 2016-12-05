@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+    <h1>D3 Cloudlines Stream Monitor</h1>
+    <script type="text/javascript">
+    	
+    </script>
+</body>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"> </script>
+<script>
+    stream_data = [];
+    historical_data = [];
+    d3.json('../history.json', function(err, json) {
+        if (err) window.alert('Data Invalid');
+        historical_data = json;
+        console.log('historical data size - ', historical_data.length);
+    });
+
+    function updateApp() {
+        var data_file = '../stream.json';
+        console.log('called updateApp');
+        d3.json(data_file, function(err, json) {
+            if (err) window.alert('stream stopped');
+            stream_data = json;
+            console.log('stream data size - ', stream_data.length);
+            //periodic recursion
+            setTimeout(updateApp, 10050);
+        });
+
+        //call render function
+    }
+
+    //start
+    updateApp();
+</script>
+</html>
