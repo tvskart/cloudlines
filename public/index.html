@@ -4,6 +4,11 @@
 </head>
 <body>
     <h1>D3 Cloudlines Stream Monitor</h1>
+    <div id="debug">
+        <h2>Time to Refresh</h2><span id="debug_time_to_refresh">10</span>
+        <h2>Historical Size</h2><span id="debug_historical_size">0</span>
+        <h2>Stream Size</h2><span id="debug_stream_size">0</span>
+    </div>
     <script type="text/javascript">
     	
     </script>
@@ -17,6 +22,7 @@
         if (err) window.alert('Data Invalid');
         historical_data = json;
         console.log('historical data size - ', historical_data.length);
+        d3.select('#debug_historical_size').text(historical_data.length);
     });
 
     function updateApp() {
@@ -26,8 +32,7 @@
             if (err) window.alert('stream stopped');
             stream_data = json;
             console.log('stream data size - ', stream_data.length);
-            //periodic recursion
-            setTimeout(updateApp, 10050);
+            d3.select('#debug_stream_size').text(stream_data.length);
         });
 
         //call render function
@@ -35,5 +40,14 @@
 
     //start
     updateApp();
+
+    function updateTimeToRefresh() {
+        var time_left = parseInt(d3.select('#debug_time_to_refresh').text());
+        
+        d3.select('#debug_time_to_refresh').text((time_left > 0) ? time_left - 1: 10);
+        if (time_left == 1) updateApp();
+        setTimeout(updateTimeToRefresh, 1000);
+    }
+    updateTimeToRefresh();
 </script>
 </html>
