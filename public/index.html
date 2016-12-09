@@ -40,13 +40,17 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
     stream_data = [];
+    stream_offset = 0;
     historical_data = [];
+    total_data = [];
     timeParse = d3.timeParse('%Y-%m-%d %H:%M:%S UTC');
     d3.json('../history.json', function(err, json) {
         if (err) window.alert('Data Invalid');
-        historical_data = json;
+        historical_data = json; //static data
+        total_data = JSON.parse(JSON.stringify(json));
         // console.log(timeParse(historical_data[5].harvested_at));
-        render(historical_data)
+        //start
+        updateApp();
         console.log('historical data size - ', historical_data.length);
         d3.select('#debug_historical_size').text(historical_data.length);
     });
@@ -57,15 +61,18 @@
         d3.json(data_file, function(err, json) {
             if (err) window.alert('stream stopped');
             stream_data = json;
+            //combine history and recent elements of stream
+            new_data = stream_data.slice(0, stream_data.length - stream_offset); //first n elements, left of offset
+            total_data = total_data.concat(new_data);
+            stream_offset += new_data.length;
+            // console.log(stream_offset, total_data.length, historical_data.length);
+            render(total_data);
             console.log('stream data size - ', stream_data.length);
             d3.select('#debug_stream_size').text(stream_data.length);
         });
 
         //call render function
     }
-
-    //start
-    updateApp();
 
     function updateTimeToRefresh() {
         var time_left = parseInt(d3.select('#debug_time_to_refresh').text());
