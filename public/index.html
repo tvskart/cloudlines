@@ -29,7 +29,7 @@
     <div id="charts">
         <div id="tooltip">
         </div>
-        <svg id="cloudlines1">
+        <svg id="cloudlines1" width="960" height="100">
             <g id="dotGroup1"></g>
         </svg>
     </div>
@@ -83,16 +83,16 @@
     }
     updateTimeToRefresh();
 
-    //Canvas Details
-    var width = 600,
-        height = 100,
-        margin = {top: 10, bottom: 10, left: 10, right: 10},
-        innerWidth = width - margin.left - margin.right,
-        innerheight = height - margin.top - margin.bottom;
-
     var chart1 = d3.select('#cloudlines1');
     var dots1 = d3.select("#dotGroup1");
     tooltip = d3.select('#tooltip');
+    //Canvas Details
+    var width = +chart1.attr('width'),
+        height = +chart1.attr('height'),
+        margin = {top: 10, bottom: 10, left: 10, right: 10},
+        innerWidth = width - margin.left - margin.right,
+        innerheight = height - margin.top - margin.bottom;
+    
     var xAxisGroup = chart1.append('g')
         .attr("transform","translate(" + margin.left + "," + (innerheight + margin.top) + ")")        
     var xAxisLabel = chart1.append("text")
@@ -104,15 +104,17 @@
 
     function render(data) {
         //tweets
+        //new Date(d.harvested_at).getTime() > new Date('2016-12-06 04:31:42 UTC').getTime()
         var mentions = data.filter(function(d) { 
-            return d.article_type == 'tweet'}
-        )
+            return d.article_type == 'tweet' && (timeParse(d.harvested_at) > timeParse('2016-12-08 04:31:42 UTC'));
+        });
         //renderList([""]); //re-render view, removing all elements
         //renderList(countries);
         renderChart(mentions);
     }
 
     function renderChart(mentions) {
+        console.log('data render size -', mentions.length);
         chart1.attr('width', width).attr('height', height)
         //Moving all dots together..
         dots1.attr("transform","translate(" + margin.left + "," + margin.top + ")");
@@ -120,8 +122,13 @@
         var xScale = d3.scaleTime(),
             populationScale = d3.scaleLinear().range([20,1000]),
             colorScale =d3.schemeCategory20;
-            console.log(timeParse('2016-12-04 04:31:42 UTC'));
-        xScale.domain([timeParse('2016-12-05 01:40:42 UTC'), timeParse('2016-12-05 03:55:17 UTC')])
+
+        var recentTime = d3.max(mentions, function(c){ return timeParse(c.harvested_at);});
+        // console.log(recentTime);
+        recentTime.setHours(recentTime.getHours() + 1);
+        recentTime.setMinutes(0); //upper hour
+        // console.log([new Date(recentTime.valueOf() - 60000 * 60 * 24), recentTime])
+        xScale.domain([new Date(recentTime.valueOf() - 60000 * 60 * 24 * 7), recentTime]); //last one week
         xScale.range([0, 700]);
         populationScale.domain(d3.extent(mentions, function(c) { return c.event_impact_score['overall'] }  ))
 
@@ -166,14 +173,16 @@
                         visibility: "hidden",
                         opacity: 0
                     })
-                });                
+                });
                 // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
-            //selection.exit().remove();
+
+            //TODO: fix, for some reason this part causes issues.. why? must be resolved..
+            // selection.exit().remove();
             // selection.transition()
             //     .attr("r", function(d, i) { return Math.sqrt(populationScale(d.event_impact_score['overall']) / Math.PI) }) //Area radius conversion
             //     .attr("cx", function(d, i) { return xScale(d.harvested_at) })
-            //     // .attr("cy", function(d, i) { return yScale(d.lifeExpectancy[vizYear]) })
-            //     .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
+                // .attr("cy", function(d, i) { return yScale(d.lifeExpectancy[vizYear]) })
+                // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
     }
 </script>
 </html>
