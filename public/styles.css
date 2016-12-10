@@ -1,0 +1,13 @@
+h2 {
+    display: inline-block !important;
+    margin-right: 10px;
+}
+.debug_info {
+    width: 300px;
+    margin: 10px;
+    padding: 10px;
+}
+
+svg g.tick line {
+    stroke: #ccc;
+}
