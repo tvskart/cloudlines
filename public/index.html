@@ -99,7 +99,7 @@
         //tweets
         //new Date(d.harvested_at).getTime() > new Date('2016-12-06 04:31:42 UTC').getTime()
         var mentions = data.filter(function(d) { 
-            return d.article_type == 'tweet' && (timeParse(d.harvested_at) > timeParse('2016-12-08 04:31:42 UTC'));
+            return true;//d.article_type == 'tweet' && (timeParse(d.harvested_at) > timeParse('2016-12-08 04:31:42 UTC'));
         });
         //renderList([""]); //re-render view, removing all elements
         //renderList(countries);
@@ -121,11 +121,14 @@
         recentTime.setHours(recentTime.getHours() + 1);
         recentTime.setMinutes(0); //upper hour
         // console.log([new Date(recentTime.valueOf() - 60000 * 60 * 24), recentTime])
-        xScale.domain([new Date(recentTime.valueOf() - 60000 * 60 * 24 * 7), recentTime]); //last one week
-        xScale.range([0, 700]);
+        // xScale.base(10)
+        xScale.domain([new Date(recentTime.valueOf() - 60000 * 60 * 2 * 1), recentTime]); //last one week
+        xScale.range([0, innerWidth]);
         populationScale.domain(d3.extent(mentions, function(c) { return c.event_impact_score['overall'] }  ))
 
         var xAxis = d3.axisBottom(xScale)
+            // .ticks(10)
+            // .tickFormat(function(d) { return timeParse(d.harvested_at).getHours(); })
             .tickSize(-100) //why innerheight is more than 400?
             //.scale(xScale)
             //.orient('bottom')
