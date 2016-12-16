@@ -34,3 +34,8 @@ rect {
 svg {
   overflow: visible;
 }
+
+svg.objects .dot:hover {
+  stroke: black;
+  stroke-width: 3px;
+}

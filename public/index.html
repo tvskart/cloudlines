@@ -199,7 +199,7 @@
     function renderChart(mentions) {
         var dotSizeScale = d3.scale.linear().range([20,1000]),
             opacityScale = d3.scale.linear().range([0,1]),
-            colorScale = d3.scale.category20;
+            colorScale = d3.scale.category10();
 
         var recentTime = d3.max(mentions, function(c){ 
             // console.log(timeFormat.parse(c.harvested_at));
@@ -242,6 +242,8 @@
             .classed("dot", true)
             .on("mouseenter", function(d, i) {
                 // highlight(d.name)
+                // d3.select(this)
+                //     .style("stroke", "black");
                 tooltip.style({
                     visibility: "visible",
                     top: d3.event.clientY,
@@ -252,6 +254,8 @@
             })
             .on("mouseleave", function(d, i) {
                 // unHighlight(d.name)
+                // d3.select(this)
+                //     .attr("fill", "magenta");
                 tooltip.style({
                     visibility: "hidden",
                     opacity: 0
@@ -263,7 +267,9 @@
             // .delay(function(d, i) { return i * 1; })
             .ease('linear')
             .attr("opacity", function(d, i) { return opacityScale(d.event_impact_score['overall']) }) //after
-            .attr('fill', 'black') //after
+            .attr('fill', (d) => {
+                return (d.first_mention) ? 'gold' : 'black'; //special first mention
+            }) //after
             // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
 
             //TODO: fix, for some reason this part causes issues.. why? must be resolved..
