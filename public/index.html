@@ -40,6 +40,7 @@
     timeFormat = d3.time.format('%Y-%m-%d %H:%M:%S UTC');
     timeDomains = [{ 'Current' : 'hour'}, { 'Last 24 hours' : 'day'}, {'Last Week' : 'week'}]; //custom select feature
     selectedTimeDomain = 'hour'; //default
+    transitionDuration = 300;
 
     //START: Data Manipulation Part
     d3.json('../history.json', function(err, json) {
@@ -93,10 +94,14 @@
         innerheight = height - margin.top - margin.bottom;
 
         // setup x 
-        var xValue = function(d) { return timeFormat.parse(d.harvested_at); }, // data -> value
+        var xValue = function(d) {
+                // console.log(timeFormat.parse(d.harvested_at), new Date(timeFormat.parse(d.harvested_at)));
+                return timeFormat.parse(d.harvested_at);
+            }, // data -> value
             xScale = d3.time.scale().range([0, innerWidth]), // value -> display
             xMap = function(d, i) { return xScale(xValue(d)); }, // data -> display
             xAxis = d3.svg.axis().scale(xScale).orient("bottom").tickSize(-innerheight);
+            xScale.domain(getTimeDomains(new Date()));
 
         // setup y - impact score
         // var yValue = function(d) { return d.event_impact_score['overall'];}, // data -> value
@@ -115,8 +120,8 @@
         //setup zoomBehaviour
         // var zoomBeh = d3.behavior.zoom()
         //     .x(xScale)
-        //     // .y(y)
-        //     .scaleExtent([0, 500])
+        //     // .y(yScale)
+        //     .scaleExtent([-500, 500])
         //     .on("zoom", zoom);
 
         // setup chart
@@ -173,6 +178,7 @@
                 .attr("value", val)
                 .on('click', () => {
                     selectedTimeDomain = event.currentTarget.value;
+                    xScale.domain(getTimeDomains(new Date()));
                     render();
                 })
         });
@@ -182,7 +188,7 @@
         //tweets
         //new Date(d.harvested_at).getTime() > new Date('2016-12-06 04:31:42 UTC').getTime()
         var mentions = total_data.filter(function(d) { 
-            return d.event_impact_score['overall'] != null && d.article_type == 'tweet'; //&& (timeFormat.parse(d.harvested_at) > timeFormat.parse('2016-12-08 04:31:42 UTC'));
+            return d.event_impact_score['overall'] != null; // && d.article_type == 'tweet'; //&& (timeFormat.parse(d.harvested_at) > timeFormat.parse('2016-12-08 04:31:42 UTC'));
             // return true;
         });
         //renderList([""]); //re-render view, removing all elements
@@ -208,7 +214,7 @@
         dotSizeScale.domain(impact_score_domain);
         opacityScale.domain([0, 100]);
 
-        xScale.domain(getTimeDomains(recentTime));
+        xScale.domain(getTimeDomains(recentTime)); //must move this out of renderchart for zoom to work!!!!!
         // yScale.domain([impact_score_domain[0] - 10, impact_score_domain[1] + 10]);
         //todo: sort based on article count
         yScale.domain(['Finance', 'Energy', 'Technology', 'Health Care', 'Basic Industries', 'Consumer Services']);
@@ -220,8 +226,8 @@
         //     .attr("y", innerheight)
         //     .text("time ...");
 
-        xAxisGroup.call(xAxis);
-        yAxisGroup.call(yAxis);
+        xAxisGroup.transition().duration(transitionDuration).call(xAxis);
+        yAxisGroup.transition().duration(transitionDuration).call(yAxis);
 
         //Render Scatter Plot
         var selection = objects.selectAll(".dot")
@@ -229,6 +235,7 @@
                                 return d.id;
                             });
     
+        //Transition animation of new data
         selection
             .enter()
             .append("circle")
@@ -249,35 +256,44 @@
                     visibility: "hidden",
                     opacity: 0
                 })
-            });
+            })
+            .attr('opacity', 1) //before
+            .attr('fill', 'red') //before            
+            .transition(transitionDuration*2)
+            // .delay(function(d, i) { return i * 1; })
+            .ease('linear')
+            .attr("opacity", function(d, i) { return opacityScale(d.event_impact_score['overall']) }) //after
+            .attr('fill', 'black') //after
             // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
 
             //TODO: fix, for some reason this part causes issues.. why? must be resolved..
             selection.exit().remove();
             selection.transition()
+                .duration(transitionDuration)
+				.ease("linear")
                 .attr("opacity", function(d, i) { return opacityScale(d.event_impact_score['overall']) })
                 .attr("r", function(d, i) { 
                     return Math.sqrt(dotSizeScale(d.event_impact_score['overall']) / Math.PI) 
                 }) //Area radius conversion
                 .attr("cx", function(d, i) { 
-                    return xScale(xValue(d))
+                    return xMap(d);
                 })
                 .attr("cy", function(d, i) { 
-                    return yScale(yValue(d))
+                    return yMap(d);
                 })
                 // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
     }
 
   function zoom() {
-    svg.select(".x.axis").call(xAxis);
+    // svg.select(".x.axis").call(xAxis);
     // svg.select(".y.axis").call(yAxis);
-
-    svg.selectAll(".dot")
-        .attr("transform", transform);
+    render();
+    // svg.selectAll(".dot")
+    //     .attr("transform", transform);
   }
 
   function transform(d) {
-    return "translate(" + xScale(timeFormat.parse(d.harvested_at)) + ", 50)";
+    return "translate(" + xScale(xValue(d)) + ", " + yScale(yValue(d)) +")";
   }
 
   function getTimeDomains(recentTime) {
@@ -290,6 +306,12 @@
           lastTime = new Date(recentTime.valueOf() - 60000 * 60 * 24 * 7);
       }
 
+      //hack: Show UCT time like data instead of EST time
+      //!!!!!!! todo: fix if possible have common time on viz and data.. 
+    //   lastTime.setHours(+5);
+    //   recentTime.setHours(+5);
+
+      console.log([lastTime, recentTime]);
       return [lastTime, recentTime];
   }
 </script>
