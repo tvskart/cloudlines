@@ -11,3 +11,26 @@ h2 {
 svg g.tick line {
     stroke: #ccc;
 }
+
+rect {
+  fill: transparent;
+  shape-rendering: crispEdges;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.1);
+  shape-rendering: crispEdges;
+}
+
+.axisLine {
+  fill: none;
+  shape-rendering: crispEdges;
+  stroke: rgba(0, 0, 0, 0.5);
+  stroke-width: 2px;
+}
+
+svg {
+  overflow: visible;
+}
