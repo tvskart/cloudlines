@@ -152,7 +152,30 @@
             .attr("width", innerWidth)
             .attr("height", innerheight);
 
-        //move to renderchart
+        var hoverLine = svg.append("path") // this is the black vertical line to follow mouse
+            .attr("class", "hover-line")
+            .style("stroke", "black")
+            .style("stroke-width", "1px")
+            .style("opacity", "0");
+
+        svg.on('mousemove', function() { // mouse moving over canvas
+            var mouse = d3.mouse(this);
+            d3.select(".hover-line")
+                .attr("d", function() {
+                    var d = "M" + mouse[0] + "," + innerheight;
+                    d += " " + mouse[0] + "," + 0;
+                    return d;
+                });
+        })
+        .on('mouseover', function() {
+            d3.select(".hover-line")
+                .style("opacity", "1");
+        })
+        .on('mouseout', function() {
+            d3.select(".hover-line")
+            .style("opacity", "0");
+        })
+
         var xAxisGroup = svg.append('g')
             .classed("x axis", true)
             .attr("transform", "translate(0," + innerheight + ")")
@@ -182,6 +205,7 @@
             .attr("x2", 0)
             .attr("y2", innerheight);
 
+        //Time buttons
         var time_inputs = d3.select('#cloudlines').append("div").classed("time-inputs", true);
         timeDomains.forEach((el) => {
             var key = Object.keys(el)[0];
