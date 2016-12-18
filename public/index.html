@@ -41,6 +41,7 @@
     timeDomains = [{ 'Current' : 'hour'}, { 'Last 24 hours' : 'day'}, {'Last Week' : 'week'}]; //custom select feature
     selectedTimeDomain = 'hour'; //default
     transitionDuration = 300;
+    selectedStory = undefined; //highlighted story
 
     //START: Data Manipulation Part
     d3.json('../history.json', function(err, json) {
@@ -249,6 +250,13 @@
             .enter()
             .append("circle")
             .classed("dot", true)
+            .on("click", function(d, i) {
+                var story_id = _.get(d, 'story_id.$oid')
+                if (selectedStory != story_id) {
+                    selectedStory = story_id;
+                    highlight(d);
+                }
+            })
             .on("mouseenter", function(d, i) {
                 highlight(d);
                 // d3.select(this)
@@ -332,13 +340,19 @@
       return [lastTime, recentTime];
   }
 
-  //Highlight common story
+  //Highlight the common story - right now effect is a red stroke.. should make it better..
   function highlight(article) {
     var story_id = _.get(article, 'story_id.$oid')
-    var event_cat = yValue(article);
+
+    //Show another view for this story id.. via function call here!!!
+
+
+    // var event_cat = yValue(article);
+    //Highlight correct dot
     objects.selectAll(".dot")
         .style("stroke", function(d, i){
-            return _.get(d, 'story_id.$oid') == story_id ? 'red' : undefined
+            //if dot is currently moused over or of selectedStory then keep them highlighted
+            return _.get(d, 'story_id.$oid') == story_id || _.get(d, 'story_id.$oid') == selectedStory ? 'red' : undefined
         })
         .style('stroke-width', '10')
         // .attr('opacity', function(d, i) { //enhance opacity of selected category, and reduce opacity of rest of screen..
@@ -347,10 +361,15 @@
   }
 
     function unHighlight(article) {
-        var story_id = _.get(article, 'story_id.$oid') //not needed
         objects.selectAll(".dot")
-            .style("stroke", undefined)
-            .style('stroke-width', '0')
+            .style("stroke", (d, i) => {
+                var story_id = _.get(d, 'story_id.$oid')
+                return (story_id == selectedStory) ? 'red' : undefined
+            })
+            .style('stroke-width', (d, i) => {
+                var story_id = _.get(d, 'story_id.$oid') //not needed
+                return (story_id == selectedStory) ? '10' : '0'
+            })
             // .attr('opacity', function(d, i) {
             //     return opacityScale(d.event_impact_score['overall'])
             // });
