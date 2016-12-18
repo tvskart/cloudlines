@@ -8,6 +8,16 @@ h2 {
     padding: 10px;
 }
 
+#tooltip {
+  color: red;
+  font-weight: bold;
+  font-size: 14px;
+  position: absolute;
+  right: 0px;
+  visibility: hidden;
+  opacity: 0;
+  border: 1px solid black;  
+}
 svg g.tick line {
     stroke: #eee;
 }
@@ -33,9 +43,4 @@ rect {
 
 svg {
   overflow: visible;
-}
-
-svg.objects .dot:hover {
-  stroke: black;
-  stroke-width: 3px;
 }

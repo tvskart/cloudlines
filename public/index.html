@@ -110,12 +110,24 @@
         //     yAxis = d3.svg.axis().scale(yScale).orient("right").tickSize(-innerWidth);
 
         // setup y - category
-        var yValue = function(d) { return _.get(d, 'entities[0].sector');
+        var yValue = function(d) {
                 var s = _.get(d, 'entities[0].sector');
+                return s;
             }, // data -> value
             yScale = d3.scale.ordinal().rangeRoundPoints([innerheight, 0], 2.5), // value -> display
             yMap = function(d) { return yScale(yValue(d));}, // data -> display
             yAxis = d3.svg.axis().scale(yScale).orient("right").tickSize(-innerWidth);
+
+        //setup other scales
+        var dotSizeScale = d3.scale.linear().range([20,1000]),
+            opacityScale = d3.scale.linear().range([0,1]),
+            colorScale = d3.scale.category10(),
+            sentimentOffsetScale = d3.scale.linear().domain([-1.0,+1.0]).range([-20,+20]);
+        var sentimentValue = function(d) {
+            var s = _.get(d, 'article_sentiment') || 0.0;
+            return s;
+        }, // data -> value
+        sentimentMap = function(d) { return sentimentOffsetScale(sentimentValue(d));}; // data -> display
 
         //setup zoomBehaviour
         // var zoomBeh = d3.behavior.zoom()
@@ -188,7 +200,7 @@
         //tweets
         //new Date(d.harvested_at).getTime() > new Date('2016-12-06 04:31:42 UTC').getTime()
         var mentions = total_data.filter(function(d) { 
-            return d.event_impact_score['overall'] != null; // && d.article_type == 'tweet'; //&& (timeFormat.parse(d.harvested_at) > timeFormat.parse('2016-12-08 04:31:42 UTC'));
+            return d.event_impact_score['overall'] != null && d.article_sentiment != null && d.story_saturation == 'low'; // && d.article_type == 'tweet'; //&& (timeFormat.parse(d.harvested_at) > timeFormat.parse('2016-12-08 04:31:42 UTC'));
             // return true;
         });
         //renderList([""]); //re-render view, removing all elements
@@ -197,10 +209,6 @@
     }
 
     function renderChart(mentions) {
-        var dotSizeScale = d3.scale.linear().range([20,1000]),
-            opacityScale = d3.scale.linear().range([0,1]),
-            colorScale = d3.scale.category10();
-
         var recentTime = d3.max(mentions, function(c){ 
             // console.log(timeFormat.parse(c.harvested_at));
             return timeFormat.parse(c.harvested_at);
@@ -211,7 +219,8 @@
         // console.log([new Date(recentTime.valueOf() - 60000 * 60 * 24), recentTime])
         // xScale.base(10)
         var impact_score_domain = d3.extent(mentions, function(c) { return c.event_impact_score['overall'] });
-        dotSizeScale.domain(impact_score_domain);
+        // dotSizeScale.domain(impact_score_domain);
+        dotSizeScale.domain([0, 100]);
         opacityScale.domain([0, 100]);
 
         xScale.domain(getTimeDomains(recentTime)); //must move this out of renderchart for zoom to work!!!!!
@@ -241,7 +250,7 @@
             .append("circle")
             .classed("dot", true)
             .on("mouseenter", function(d, i) {
-                // highlight(d.name)
+                highlight(d);
                 // d3.select(this)
                 //     .style("stroke", "black");
                 tooltip.style({
@@ -250,10 +259,10 @@
                     left: d3.event.clientX,
                     opacity: 1
                 })
-                tooltip.text(d.harvested_at)
+                tooltip.text(d.harvested_at + " | " + d.article_sentiment);
             })
             .on("mouseleave", function(d, i) {
-                // unHighlight(d.name)
+                unHighlight(d);
                 // d3.select(this)
                 //     .attr("fill", "magenta");
                 tooltip.style({
@@ -284,8 +293,10 @@
                 .attr("cx", function(d, i) { 
                     return xMap(d);
                 })
-                .attr("cy", function(d, i) { 
-                    return yMap(d);
+                .attr("cy", function(d, i) {
+                    var yVal = yMap(d);
+                    var yOffset = sentimentMap(d);
+                    return (!isNaN(yVal)) ? yVal - yOffset: yVal; //isnan check avoids err due to points not mapped to sector
                 })
                 // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
     }
@@ -320,5 +331,29 @@
       console.log([lastTime, recentTime]);
       return [lastTime, recentTime];
   }
+
+  //Highlight common story
+  function highlight(article) {
+    var story_id = _.get(article, 'story_id.$oid')
+    var event_cat = yValue(article);
+    objects.selectAll(".dot")
+        .style("stroke", function(d, i){
+            return _.get(d, 'story_id.$oid') == story_id ? 'red' : undefined
+        })
+        .style('stroke-width', '10')
+        // .attr('opacity', function(d, i) { //enhance opacity of selected category, and reduce opacity of rest of screen..
+        //     return (yValue(d) == event_cat) ? 1 : 0.3;
+        // })
+  }
+
+    function unHighlight(article) {
+        var story_id = _.get(article, 'story_id.$oid') //not needed
+        objects.selectAll(".dot")
+            .style("stroke", undefined)
+            .style('stroke-width', '0')
+            // .attr('opacity', function(d, i) {
+            //     return opacityScale(d.event_impact_score['overall'])
+            // });
+    }
 </script>
 </html>
