@@ -18,6 +18,12 @@ h2 {
   opacity: 0;
   border: 1px solid black;  
 }
+
+#cloudlines, #storyview {
+  float: left;
+}
+
+
 svg g.tick line {
     stroke: #eee;
 }

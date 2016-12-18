@@ -24,6 +24,8 @@
         </div>
         <div id="cloudlines">
         </div>
+        <div id="storyview">
+        </div>
     </div>
     <script type="text/javascript">
     	
@@ -120,9 +122,11 @@
     //END: Data Manipulation Part
     tooltip = d3.select('#tooltip');
 
+    //Aux view Details
+    var listWidth = 300;
     //Canvas Details
-    var width = 1050,//960,
-        height = 500,//100, //todo: change
+    var width = 600,//1050,960,
+        height = 500,//500,100,
         // margin = { top: 50, right: 300, bottom: 50, left: 50 },
         margin = {top: 10, bottom: 10, left: 10, right: 10},
         innerWidth = width - margin.left - margin.right,
@@ -149,15 +153,17 @@
                 var s = _.get(d, 'entities[0].sector');
                 return s;
             }, // data -> value
-            yScale = d3.scale.ordinal().rangeRoundPoints([innerheight, 0], 2.5), // value -> display
+            yScale = d3.scale.ordinal().rangeRoundPoints([innerheight, 0], 1), // value -> display
             yMap = function(d) { return yScale(yValue(d));}, // data -> display
             yAxis = d3.svg.axis().scale(yScale).orient("right").tickSize(-innerWidth);
 
+        var dotSizeRange = [20,500];
+        var sentimentOffsetRange = [-10,+10];
         //setup other scales
-        var dotSizeScale = d3.scale.linear().range([20,1000]),
+        var dotSizeScale = d3.scale.linear().range(dotSizeRange),
             opacityScale = d3.scale.linear().range([0,1]),
             colorScale = d3.scale.category10(),
-            sentimentOffsetScale = d3.scale.linear().domain([-1.0,+1.0]).range([-20,+20]);
+            sentimentOffsetScale = d3.scale.linear().domain([-1.0,+1.0]).range(sentimentOffsetRange);
         var sentimentValue = function(d) {
             var s = _.get(d, 'article_sentiment') || 0.0;
             return s;
@@ -173,6 +179,7 @@
 
         // setup chart
         var svg = d3.select('#cloudlines')
+            .style('width', width + 100 + 'px')
             .append("svg")
                 .attr('width', width)
                 .attr('height', height)
@@ -239,6 +246,10 @@
             .attr("x2", 0)
             .attr("y2", innerheight);
 
+        //Setup storyview
+        var storyview = d3.select('#storyview')
+            .style('width', listWidth + 'px')
+            .append("ul");
         //Time buttons
         var time_inputs = d3.select('#cloudlines').append("div").classed("time-inputs", true);
         timeDomains.forEach((el) => {
@@ -253,35 +264,39 @@
                     render();
                 })
         });
-        
 
+    var mentions; //global    
+    var intensityByCategory;
     function render() {
         //tweets
         //new Date(d.harvested_at).getTime() > new Date('2016-12-06 04:31:42 UTC').getTime()
-        var mentions = total_data.filter(function(d) { 
-            return d.event_impact_score['overall'] != null && d.article_sentiment != null && d.story_saturation == 'low'; // && d.article_type == 'tweet'; //&& (timeFormat.parse(d.harvested_at) > timeFormat.parse('2016-12-08 04:31:42 UTC'));
+        mentions = total_data.filter(function(d) { 
+            return d.event_impact_score['overall'] != null 
+                && d.article_sentiment != null 
+                && _.get(d, 'entities[0].sector') != 'n/a'
+                && _.get(d, 'entities[0].sector') != 'N/A'; // && d.article_type == 'tweet'; //&& (timeFormat.parse(d.harvested_at) > timeFormat.parse('2016-12-08 04:31:42 UTC'));
             // return true;
         });
 
         //Generate volume intensity for different times
         var currentTime = new Date();
-        var intensityByCategory = d3.nest()
-            .key((d) => {
-                return yValue(d);
-            })
-            .key((d) => {
-                return _.get(d, 'custom_time_offset'); //returns hour, day, week, etc.
-            })
-            .rollup(function(v) {
-                var custom_time_offset = _.get(v, '[0].custom_time_offset');
-                //rate per minute
-                return (v.length / timeInMilli[custom_time_offset]) * timeInMilli['sec'];
-                // return d3.mean(v, function(d) { return d.article_sentiment; }); 
-            })
-            .map(mentions);
-            console.log(intensityByCategory);
+        // intensityByCategory = d3.nest()
+        //     .key((d) => {
+        //         return yValue(d);
+        //     })
+        //     .key((d) => {
+        //         return _.get(d, 'custom_time_offset'); //returns hour, day, week, etc.
+        //     })
+        //     .rollup(function(v) {
+        //         var custom_time_offset = _.get(v, '[0].custom_time_offset');
+        //         //rate per minute
+        //         return (v.length / timeInMilli[custom_time_offset]) * timeInMilli['sec'];
+        //         // return d3.mean(v, function(d) { return d.article_sentiment; }); 
+        //     })
+        //     .map(mentions);
+        //     console.log(intensityByCategory);
         //renderList([""]); //re-render view, removing all elements
-        //renderList(countries);
+        // renderList(mentions); //too mamy elements
         renderChart(mentions);
     }
 
@@ -302,8 +317,10 @@
 
         xScale.domain(getTimeDomains(recentTime)); //must move this out of renderchart for zoom to work!!!!!
         // yScale.domain([impact_score_domain[0] - 10, impact_score_domain[1] + 10]);
-        //todo: sort based on article count
-        yScale.domain(['Finance', 'Energy', 'Technology', 'Health Care', 'Basic Industries', 'Consumer Services']);
+        //todo: sort based on article count - (['Finance', 'Energy', 'Technology', 'Health Care', 'Basic Industries', 'Consumer Services'])
+        //"Energy,Finance,Capital Goods,Health Care,Consumer Non-Durables,Technology,Consumer Services,Basic Industries,Consumer Durables,Public Utilities,Miscellaneous,Transportation"
+        // yScale.domain(Object.keys(intensityByCategory));
+        yScale.domain('Energy,Finance,Capital Goods,Health Care,Consumer Non-Durables,Technology,Consumer Services,Basic Industries,Consumer Durables,Public Utilities,Miscellaneous,Transportation'.split(','));
 
         // var xAxisLabel = chart1.append("text")
         //     .attr("class", "axisLabel")
@@ -385,6 +402,28 @@
                 // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
     }
 
+    function renderList(mentions) {
+        var selection = storyview.selectAll("li")
+            .data(mentions.sort(function(a, b){
+                return d3.descending(a.harvested_at, b.harvested_at);
+            }), function(d) { //key tied to dot
+                return d.id;
+            })
+
+            selection
+                .enter() //refers to 'new' data items, what to do with them.
+                .append('li')
+                .text(function(d) {
+                    return d.id + " " + d.harvested_at + " " + d.article_type + " " + _.get(d, 'entities[0].name') + " " + d.article_url;
+                })
+                .on("mouseenter", function(d, i) {
+                    highlight(d)
+                })
+                .on("mouseleave", function(d, i) {
+                    unHighlight(d)
+                })
+            selection.exit().remove(); //refers to the data items no longer there, manipulate their corresponding DOM then
+    }
   function zoom() {
     // svg.select(".x.axis").call(xAxis);
     // svg.select(".y.axis").call(yAxis);
@@ -435,6 +474,12 @@
         // .attr('opacity', function(d, i) { //enhance opacity of selected category, and reduce opacity of rest of screen..
         //     return (yValue(d) == event_cat) ? 1 : 0.3;
         // })
+    
+    storyview.selectAll("li")
+        .style("font-weight", function(d, i){
+            //if dot is currently moused over or of selectedStory then keep them highlighted
+            return _.get(d, 'story_id.$oid') == story_id || _.get(d, 'story_id.$oid') == selectedStory ? 'red' : undefined
+        })
   }
 
     function unHighlight(article) {
