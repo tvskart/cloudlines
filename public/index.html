@@ -39,6 +39,12 @@
     //Very important to understand time - https://github.com/d3/d3-3.x-api-reference/blob/master/API-Reference.md#d3time-time
     timeFormat = d3.time.format('%Y-%m-%d %H:%M:%S UTC');
     timeDomains = [{ 'Current' : 'hour'}, { 'Last 24 hours' : 'day'}, {'Last Week' : 'week'}]; //custom select feature
+    timeInMilli = {
+        'sec': 1000*60, //extra info
+        'hour':  1000*60*60*1,
+        'day':  1000*60*60*24,
+        'week':  1000*60*60*24*7
+    };
     selectedTimeDomain = 'hour'; //default
     transitionDuration = 300;
     selectedStory = undefined; //highlighted story
@@ -48,6 +54,7 @@
         if (err) window.alert('Data Invalid');
         historical_data = json; //static data
         total_data = JSON.parse(JSON.stringify(json));
+        enhanceData(total_data);
         // console.log(timeFormat.parse(historical_data[5].harvested_at));
         //start
         updateApp();
@@ -63,6 +70,7 @@
             stream_data = json;
             //combine history and recent elements of stream
             new_data = stream_data.slice(0, stream_data.length - stream_offset); //first n elements, left of offset
+            enhanceData(new_data);
             total_data = total_data.concat(new_data);
             stream_offset += new_data.length;
             // console.log(stream_offset, total_data.length, historical_data.length);
@@ -72,6 +80,32 @@
         });
 
         //call render function
+    }
+
+    //Enhance data with handy, easy to use derived values!! saves calculation time later!!
+    function enhanceData(data) {
+        var currentTime = new Date();
+        data.map((d, i) => {
+            //custom_time_offset key is grouping entities by time
+            //make sure to update if recent data.. if it's a day/week leave as is..
+            if (!_.get(d, 'custom_time_offset') || _.get(d, 'custom_time_offset') == 'hour') {
+                var timeOffset = (currentTime - timeFormat.parse(d.harvested_at));
+                var custom_time_offset;
+                if (timeOffset >= timeInMilli['week']) {
+                    custom_time_offset = 'week';
+                } else if (timeOffset >= timeInMilli['day']) {
+                    custom_time_offset = 'day';
+                } else {
+                    custom_time_offset = 'hour';
+                }
+                d.custom_time_offset = custom_time_offset; //add/update key
+            }
+
+            //additional derived values go here
+
+            //return
+            return d;
+        });
     }
 
     function updateTimeToRefresh() {
@@ -228,6 +262,24 @@
             return d.event_impact_score['overall'] != null && d.article_sentiment != null && d.story_saturation == 'low'; // && d.article_type == 'tweet'; //&& (timeFormat.parse(d.harvested_at) > timeFormat.parse('2016-12-08 04:31:42 UTC'));
             // return true;
         });
+
+        //Generate volume intensity for different times
+        var currentTime = new Date();
+        var intensityByCategory = d3.nest()
+            .key((d) => {
+                return yValue(d);
+            })
+            .key((d) => {
+                return _.get(d, 'custom_time_offset'); //returns hour, day, week, etc.
+            })
+            .rollup(function(v) {
+                var custom_time_offset = _.get(v, '[0].custom_time_offset');
+                //rate per minute
+                return (v.length / timeInMilli[custom_time_offset]) * timeInMilli['sec'];
+                // return d3.mean(v, function(d) { return d.article_sentiment; }); 
+            })
+            .map(mentions);
+            console.log(intensityByCategory);
         //renderList([""]); //re-render view, removing all elements
         //renderList(countries);
         renderChart(mentions);
@@ -345,11 +397,12 @@
     return "translate(" + xScale(xValue(d)) + ", " + yScale(yValue(d)) +")";
   }
 
-  function getTimeDomains(recentTime) {
+  //Can pass second arg if needed, not used anywhere so far.
+  function getTimeDomains(recentTime, timeDomain = selectedTimeDomain) {
       var lastTime;
-      if (selectedTimeDomain == 'hour') {
+      if (timeDomain == 'hour') {
           lastTime = new Date(recentTime.valueOf() - 60000 * 60 * 2 * 1);
-      } else if (selectedTimeDomain == 'day') {
+      } else if (timeDomain == 'day') {
           lastTime = new Date(recentTime.valueOf() - 60000 * 60 * 24 * 1);
       } else { //week
           lastTime = new Date(recentTime.valueOf() - 60000 * 60 * 24 * 7);
