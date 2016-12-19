@@ -28,6 +28,11 @@ svg g.tick line {
     stroke: #eee;
 }
 
+svg path.selection, svg path.terminator {
+  stroke: #000;
+  stroke-width: 1;
+  fill: none;
+}
 rect {
   fill: transparent;
   shape-rendering: crispEdges;
@@ -49,4 +54,20 @@ rect {
 
 svg {
   overflow: visible;
+}
+
+#storyview { 
+  overflow-y: scroll;
+}
+#storyview div.item{
+  cursor: pointer;
+      height: 39px;
+    overflow: hidden;
+    margin: 3px;
+    border: 1px solid gray;
+    border-radius: 2px;    
+}
+
+#storyview .first-mention {
+  background: gold;
 }
