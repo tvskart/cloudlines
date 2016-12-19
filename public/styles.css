@@ -1,3 +1,38 @@
+h1 {
+    text-align: center;
+    color: white;
+    background:#3b5998;
+    margin: 0px;
+    height: 50px;
+    line-height: 50px;    
+}
+
+body {
+      margin: 0px;
+        background: rgba(84, 86, 160, 0.05);
+}
+
+.cloudlines-title, .storyview-title {
+  text-align: center;
+    font-size: 20px;
+    margin: 5px;
+}
+#debug {
+  display:none;
+}
+#debug_time_to_refresh {
+    position: absolute;
+    right: 50px;
+    top: 2px;
+    font-weight: bold;
+    color: #3b5998;
+    font-size: 23px;
+    background: white;
+    padding: 10px;
+    width: 24px;
+    border-radius: 4px;
+    text-align: center;
+}
 h2 {
     display: inline-block !important;
     margin-right: 10px;
@@ -24,6 +59,7 @@ h2 {
 }
 #cloudlines svg {
   overflow: hidden;
+  margin-left: 10px;
 }
 
 svg g.tick line {
@@ -36,7 +72,7 @@ svg path.selection, svg path.terminator {
   fill: none;
 }
 rect {
-  fill: transparent;
+  fill: white;
   shape-rendering: crispEdges;
 }
 

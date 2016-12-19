@@ -7,10 +7,11 @@
     <link rel="stylesheet" type="text/css" href="./styles.css" />
 </head>
 <body>
-    <h1>D3 Cloudlines Stream Monitor</h1>
+    <h1>Stream Data Monitoring</h1>
+    <span id="debug_time_to_refresh">10</span>
     <div id="debug">
         <span class="debug_info">
-        <h2>Time to Refresh</h2><span id="debug_time_to_refresh">10</span>
+        <!--<h2>Time to Refresh</h2><span id="debug_time_to_refresh">10</span>-->
         </span>
             <span class="debug_info">
         <h2>Historical Size</h2><span id="debug_historical_size">0</span>
@@ -159,7 +160,7 @@
             yMap = function(d) { return yScale(yValue(d));}, // data -> display
             yAxis = d3.svg.axis().scale(yScale).orient("right").tickSize(-innerWidth);
 
-        var dotSizeRange = [20,500];
+        var dotSizeRange = [20,200];
         var sentimentOffsetRange = [-10,+10];
         //setup other scales
         var dotSizeScale = d3.scale.linear().range(dotSizeRange),
@@ -180,10 +181,14 @@
             .on("zoom", zoom);
 
         // setup chart
+        d3.select('#cloudlines')
+            .append('div')
+            .text('Cloudlines by Sector')
+            .classed('cloudlines-title', true);
         var svg = d3.select('#cloudlines')
-            .style('width', width + 50 + 'px')
+            .style('width', width + 75 + 'px')
             .append("svg")
-                .attr('width', width + 50)
+                .attr('width', width + 75)
                 .attr('height', height)
                 .attr('id', 'outer-svg')
             .append("g")
@@ -261,6 +266,21 @@
             .attr("x2", 0)
             .attr("y2", innerheight);
 
+        objects.append("svg:line")
+            .classed("axisLine hAxisLine", true)
+            .attr("x1", 0)
+            .attr("y1", -1*innerheight)
+            .attr("x2", 0)
+            .attr("y2", -1*innerheight)
+            .attr("transform", "translate(0," + innerheight + ")");
+
+        objects.append("svg:line")
+            .classed("axisLine vAxisLine", true)
+            .attr("x1", innerWidth)
+            .attr("y1", 0)
+            .attr("x2", innerWidth)
+            .attr("y2", innerheight);
+
     //setup drag behavior - referenced from  http://jsfiddle.net/pPMqQ/34/
       // An array to hold the coordinates
       // of the line drawn on each svg.
@@ -334,10 +354,16 @@
         // d3.selectAll("svg path.selection").transition().attr("transform", "translate(" + x(-1) + ")");
         
         //Setup storyview
+        d3.select('#storyview').append('div')
+            .text('Story View')
+            .classed('storyview-title', true);
+
         var storyview = d3.select('#storyview')
             .style('width', listWidth + 'px')
             .style('height', innerheight + 'px')
             .append("div");
+
+        
 
         //Time buttons
         var time_inputs = d3.select('#cloudlines').append("div").classed("time-inputs", true);
@@ -391,6 +417,18 @@
         //     .map(mentions);
         //     console.log(intensityByCategory);
         //renderList([""]); //re-render view, removing all elements
+
+        // mentionsByStory = d3.nest()
+        //     .key((d) => {
+        //         return _.get(d, 'story_id.$oid');
+        //     })
+        //     // .rollup(function(v) {
+        //     //     var custom_time_offset = _.get(v, '[0].custom_time_offset');
+        //     //     //rate per minute
+        //     //     return (v.length / timeInMilli[custom_time_offset]) * timeInMilli['sec'];
+        //     //     // return d3.mean(v, function(d) { return d.article_sentiment; }); 
+        //     // })
+        //     .map(mentions);
         renderList(mentions); //too mamy elements
         renderChart(mentions);
     }
@@ -509,6 +547,12 @@
     }
 
     function renderList(mentions) {
+        // console.log(mentionsByStory);
+        // var data = Object.keys(mentionsByStory);
+        // data.map((d,i) => {
+        //     return _.get(mentionsByStory, d)[0]
+        // });
+        // console.log(data);
         var selection = storyview.selectAll("div")
             .data(mentions.sort(function(a, b){
                 return d3.descending(a.harvested_at, b.harvested_at);
@@ -525,6 +569,9 @@
 
                     //
                     var date = xValue(d);
+                //     var utc_time = date.toUTCString();
+                // var anotherTimeFormat = d3.time.format('%a, %d %b %Y %H:%M:%S GMT');
+                // var recentTime = anotherTimeFormat.parse(utc_time);
                     timeutc = date.toUTCString();
                     timeutc = timeutc.split('GMT')[0]; //get rid of GMT
                     dayutc = timeutc.split('2016')[0].trim();
