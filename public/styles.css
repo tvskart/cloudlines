@@ -22,7 +22,9 @@ h2 {
 #cloudlines, #storyview {
   float: left;
 }
-
+#cloudlines svg {
+  overflow: hidden;
+}
 
 svg g.tick line {
     stroke: #eee;
@@ -53,7 +55,7 @@ rect {
 }
 
 svg {
-  overflow: visible;
+  /*overflow: visible;*/
 }
 
 #storyview { 
