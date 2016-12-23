@@ -559,7 +559,7 @@
             .ease('linear')
             .attr("opacity", function(d, i) { return opacityScale(d.event_impact_score['overall']) }) //after
             .attr('fill', (d) => {
-                return (d.first_mention) ? 'blue' : 'black'; //special first mention
+                return (d.first_mention) ? 'gold' : 'black'; //special first mention
             }) //after
             // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
 
@@ -655,7 +655,7 @@
                 .transition(transitionDuration*4)
                 .ease('linear')
                 .style('background-color', (d) => {
-                    (d.first_mention) ? 'blue' : 'white';
+                    (d.first_mention) ? 'gold' : 'white';
                 })
 
             selection.exit().remove(); //refers to the data items no longer there, manipulate their corresponding DOM then
