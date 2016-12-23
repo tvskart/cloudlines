@@ -71,7 +71,7 @@ svg path.selection, svg path.terminator {
   stroke-width: 1;
   fill: none;
 }
-rect {
+.zoom-parent rect {
   fill: white;
   shape-rendering: crispEdges;
 }
@@ -108,4 +108,10 @@ svg {
 
 #storyview .first-mention {
   background: gold;
+}
+
+#brush_container .viewport {
+    stroke: grey;
+    fill: black;
+    fill-opacity: 0.2;
 }
