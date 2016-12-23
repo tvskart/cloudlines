@@ -127,7 +127,7 @@
     var listWidth = 300;
     //Canvas Details
     var width = 1000,//1050,960,
-        height = 700,//500,100,
+        height = 600,//500,100,
         // margin = { top: 50, right: 300, bottom: 50, left: 50 },
         margin = {top: 10, bottom: 10, left: 100, right: 10},
         innerWidth = width - margin.left - margin.right,
@@ -160,7 +160,7 @@
             yMap = function(d) { return yScale(yValue(d));}, // data -> display
             yAxis = d3.svg.axis().scale(yScale).orient("right").tickSize(-innerWidth);
 
-        var dotSizeRange = [20,200];
+        var dotSizeRange = [10,200];
         var sentimentOffsetRange = [-10,+10];
         //setup other scales
         var dotSizeScale = d3.scale.linear().range(dotSizeRange),
@@ -444,8 +444,8 @@
         // console.log([new Date(recentTime.valueOf() - 60000 * 60 * 24), recentTime])
         // xScale.base(10)
         var impact_score_domain = d3.extent(mentions, function(c) { return c.event_impact_score['overall'] });
-        // dotSizeScale.domain(impact_score_domain);
-        dotSizeScale.domain([0, 100]);
+        dotSizeScale.domain(impact_score_domain);
+        // dotSizeScale.domain([0, 100]);
         opacityScale.domain([0, 100]);
 
         // xScale.domain(getTimeDomains(recentTime)); //must move this out of renderchart for zoom to work!!!!!
@@ -514,7 +514,7 @@
             .ease('linear')
             .attr("opacity", function(d, i) { return opacityScale(d.event_impact_score['overall']) }) //after
             .attr('fill', (d) => {
-                return (d.first_mention) ? 'gold' : 'black'; //special first mention
+                return (d.first_mention) ? 'blue' : 'black'; //special first mention
             }) //after
             // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
 
@@ -583,7 +583,7 @@
                     } else {
                         time = dayutc + ' ' + timeutc;
                     }
-                    str += time + ' | ';
+                    // str += time + ' | ';
                     str +=  _.get(d, 'entities[0].ticker') + ' | ';
                     str += 'mentions count: ' + d.story_volume; //number of articles
                     // str += d.article_type;
@@ -610,7 +610,7 @@
                 .transition(transitionDuration*4)
                 .ease('linear')
                 .style('background-color', (d) => {
-                    (d.first_mention) ? 'gold' : 'white';
+                    (d.first_mention) ? 'blue' : 'white';
                 })
 
             selection.exit().remove(); //refers to the data items no longer there, manipulate their corresponding DOM then
