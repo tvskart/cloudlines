@@ -523,9 +523,12 @@
             .classed("dot", true)
             .on("click", function(d, i) {
                 var story_id = _.get(d, 'story_id.$oid')
+
                 if (selectedStory != story_id) {
+                    selectedStory = undefined;
+                    unHighlight(d); //first un-highlight everything
                     selectedStory = story_id;
-                    highlight(d);
+                    highlight(d); //then highlight the new story
                 } else {
                     selectedStory = undefined;
                     unHighlight(d);
@@ -721,29 +724,23 @@
     // var event_cat = yValue(article);
     //Highlight correct dot
     objects.selectAll(".dot")
-        .style("stroke", function(d, i){
-            //if dot is currently moused over or of selectedStory then keep them highlighted
-            return _.get(d, 'story_id.$oid') == story_id || _.get(d, 'story_id.$oid') == selectedStory ? 'red' : undefined
-        })
-        .style('stroke-width', '10')
-        // .attr('opacity', function(d, i) { //enhance opacity of selected category, and reduce opacity of rest of screen..
-        //     return (yValue(d) == event_cat) ? 1 : 0.3;
-        // })
+        .filter((d) => {return _.get(d, 'story_id.$oid') == story_id})
+            .style("stroke", "red")
+            .style('stroke-width', '10')
           console.log('highlight called', story_id, selectedStory);
 
-    if (story_id == selectedStory) {
+    if (selectedStory && (story_id == selectedStory)) {
         //click action must show only mentions in list
         storyview.selectAll(".item")
-            .style("display", function(d, i){
-                return _.get(d, 'story_id.$oid') == story_id ? 'block' : 'none';
-            })
+            .filter((d) => {return _.get(d, 'story_id.$oid') != selectedStory})
+            .style("display", "none");
     } else {
         //hover action
-        storyview.selectAll(".item")
-            .style("font-weight", function(d, i){
-                //if dot is currently moused over or of selectedStory then keep them highlighted
-                return _.get(d, 'story_id.$oid') == story_id || _.get(d, 'story_id.$oid') == selectedStory ? 'bold' : 'normal'
-            })
+        // storyview.selectAll(".item")
+        //     .style("font-weight", function(d, i){
+        //         //if dot is currently moused over or of selectedStory then keep them highlighted
+        //         return _.get(d, 'story_id.$oid') == story_id || _.get(d, 'story_id.$oid') == selectedStory ? 'bold' : 'normal'
+        //     })
     }
 
     // storyview.selectAll(".item")
@@ -757,34 +754,39 @@
     //     })
   }
 
+  //TODO: optimize click to unhighlight feature!!!
     function unHighlight(article) {
         console.log('unhighlight called', selectedStory);
+        var story_id = _.get(article, 'story_id.$oid')     
         if (!selectedStory) {//un-click or no story is clicked mode
             objects.selectAll(".dot")
                 .style("stroke", undefined);
+                //show all stories again
             storyview.selectAll(".item")
                 .style("font-weight", 'normal')
-                .style("display", 'block');            
+                .style("display", 'block');
         } else { //just a mouse out,,, keep selected highlighted..
             objects.selectAll(".dot")
-                .style("stroke", (d, i) => {
-                    var story_id = _.get(d, 'story_id.$oid')
-                    return (story_id == selectedStory) ? 'red' : undefined
-                })
-                .style('stroke-width', (d, i) => {
-                    var story_id = _.get(d, 'story_id.$oid')
-                    return (story_id == selectedStory) ? '10' : '0'
-                })
+                .filter((d) => {
+                    var sid = _.get(d, 'story_id.$oid');
+                    if (selectedStory && sid == selectedStory) {
+                        return false; //ignore selected story
+                    } else {
+                        return sid == story_id; //include hovered story
+                    }
+                    })
+                .style("stroke", undefined)
+                .style('stroke-width', '0')
 
-            storyview.selectAll(".item")
-                .style("font-weight", function(d, i){
-                    var story_id = _.get(d, 'story_id.$oid')
-                    return story_id == selectedStory ? 'bold' : 'normal'
-                })
-                .style("display", function(d, i){
-                    var story_id = _.get(d, 'story_id.$oid')
-                    return story_id == selectedStory ? 'block' : 'none'
-                })
+            // storyview.selectAll(".item")
+            //     .style("font-weight", function(d, i){
+            //         var story_id = _.get(d, 'story_id.$oid')
+            //         return story_id == selectedStory ? 'bold' : 'normal'
+            //     })
+            //     .style("display", function(d, i){
+            //         var story_id = _.get(d, 'story_id.$oid')
+            //         return story_id == selectedStory ? 'block' : 'none'
+            //     })
         }
 
         // objects.selectAll(".dot")
@@ -800,10 +802,11 @@
             //     return opacityScale(d.event_impact_score['overall'])
             // });
 
-    storyview.selectAll(".item")
-        .style("font-weight", 'undefined')
-        .style("display", 'block');            
+    // storyview.selectAll(".item")
+    //     .style("font-weight", 'undefined')
+    //     .style("display", 'block');
     }
+
   function pointInPolygon (point, vs) {
     var xi, xj, i, intersect,
         x = point[0],
