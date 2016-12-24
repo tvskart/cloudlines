@@ -53,18 +53,18 @@
     selectedStory = undefined; //highlighted story
 
     //START: Data Manipulation Part
-    d3.json('../history.json', function(err, json) {
-        if (err) window.alert('Data Invalid');
-        historical_data = json; //static data
-        total_data = JSON.parse(JSON.stringify(json));
-        enhanceData(total_data);
-        // console.log(timeFormat.parse(historical_data[5].harvested_at));
-        //start
-        updateApp();
-        // console.log('historical data size - ', historical_data.length);
-        d3.select('#debug_historical_size').text(historical_data.length);
-    });
-
+    // d3.json('../history.json', function(err, json) {
+    //     if (err) window.alert('Data Invalid');
+    //     historical_data = json; //static data
+    //     total_data = JSON.parse(JSON.stringify(json));
+    //     enhanceData(total_data);
+    //     // console.log(timeFormat.parse(historical_data[5].harvested_at));
+    //     //start
+    //     updateApp();
+    //     // console.log('historical data size - ', historical_data.length);
+    //     d3.select('#debug_historical_size').text(historical_data.length);
+    // });
+updateApp();
     function updateApp() {
         var data_file = '../stream.json';
         console.log('called updateApp');
@@ -434,6 +434,7 @@
 
     var mentions; //global    
     var intensityByCategory;
+    var intensities = [];
     function render() {
         //tweets
         //new Date(d.harvested_at).getTime() > new Date('2016-12-06 04:31:42 UTC').getTime()
@@ -445,23 +446,46 @@
             // return true;
         });
 
+        //FORCE
+        mentions.forEach((d) => {
+            d.x = xMap(d);
+            d.y = yMap(d);
+            d.idealcx = xMap(d);
+            d.idealcy = yMap(d);
+            // d.radius = Math.sqrt(dotSizeScale(d.event_impact_score['overall']) / Math.PI);
+        });
+        mentions.filter((d) => {
+            return d.radius == undefined
+        }).forEach((d) => {
+            d.radius = Math.sqrt(dotSizeScale(d.event_impact_score['overall']) / Math.PI);
+        });
         //Generate volume intensity for different times
         var currentTime = new Date();
-        // intensityByCategory = d3.nest()
-        //     .key((d) => {
-        //         return yValue(d);
-        //     })
-        //     .key((d) => {
-        //         return _.get(d, 'custom_time_offset'); //returns hour, day, week, etc.
-        //     })
-        //     .rollup(function(v) {
-        //         var custom_time_offset = _.get(v, '[0].custom_time_offset');
-        //         //rate per minute
-        //         return (v.length / timeInMilli[custom_time_offset]) * timeInMilli['sec'];
-        //         // return d3.mean(v, function(d) { return d.article_sentiment; }); 
-        //     })
-        //     .map(mentions);
-        //     console.log(intensityByCategory);
+        intensityByCategory = d3.nest()
+            .key((d) => {
+                return yValue(d);
+            })
+            .key((d) => {
+                return _.get(d, 'custom_time_offset'); //returns hour, day, week, etc.
+            })
+            .rollup(function(v) {
+                var custom_time_offset = _.get(v, '[0].custom_time_offset');
+                //rate per minute
+                return (v.length / timeInMilli[custom_time_offset]) * timeInMilli['sec'];
+                // return d3.mean(v, function(d) { return d.article_sentiment; }); 
+            })
+            .map(mentions);
+            console.log(intensityByCategory);
+        intensities = [];
+        Object.keys(intensityByCategory).forEach((el) => {
+            intensities.push({
+                'label': el,
+                'intensity': _.get(intensityByCategory, el+'.hour')
+            })
+        });
+        intensities.sort(function(a, b){return b.intensity-a.intensity});
+        yScale.domain(intensities.map((d) => {return d.label}));
+
         //renderList([""]); //re-render view, removing all elements
 
         // mentionsByStory = d3.nest()
@@ -479,8 +503,21 @@
         renderList(mentions); //too mamy elements
         renderChart(mentions);
     }
+    var force;
 
     function renderChart(mentions) {
+        //FORCE layout
+        force = d3.layout.force()
+            .nodes(mentions)
+            .size([innerWidth, innerheight])
+            .charge((d) => {return -1* Math.pow(d.radius, 2.0) / 8})
+            .chargeDistance(20)
+            // .gravity(0)
+            // .friction(0.3)
+            .on("tick", tick);
+        //             force.start();
+        // for (var i = 2; i > 0; --i) force.tick();
+        // force.stop();
         var recentTime = d3.max(mentions, function(c){ 
             // console.log(timeFormat.parse(c.harvested_at));
             return timeFormat.parse(c.harvested_at);
@@ -500,7 +537,7 @@
         //todo: sort based on article count - (['Finance', 'Energy', 'Technology', 'Health Care', 'Basic Industries', 'Consumer Services'])
         //"Energy,Finance,Capital Goods,Health Care,Consumer Non-Durables,Technology,Consumer Services,Basic Industries,Consumer Durables,Public Utilities,Miscellaneous,Transportation"
         // yScale.domain(Object.keys(intensityByCategory));
-        yScale.domain('Energy,Finance,Capital Goods,Health Care,Consumer Non-Durables,Technology,Consumer Services,Basic Industries,Consumer Durables,Public Utilities,Miscellaneous,Transportation'.split(','));
+        // yScale.domain('Energy,Finance,Capital Goods,Health Care,Consumer Non-Durables,Technology,Consumer Services,Basic Industries,Consumer Durables,Public Utilities,Miscellaneous,Transportation'.split(','));
 
         // var xAxisLabel = chart1.append("text")
         //     .attr("class", "axisLabel")
@@ -569,7 +606,8 @@
             .attr("cy", function(d, i) {
                 var yVal = yMap(d);
                 var yOffset = sentimentMap(d);
-                return (!isNaN(yVal)) ? yVal - yOffset: yVal; //isnan check avoids err due to points not mapped to sector
+                var rOffset = (sentimentValue(d) > 0) ? Math.random()*5 : -1*Math.random()*5;
+                return (!isNaN(yVal)) ? yVal - yOffset - rOffset: yVal; //isnan check avoids err due to points not mapped to sector
             })
             .attr('fill', (d) => {
                 return (d.first_mention) ? 'blue' : 'black'; //special first mention
@@ -582,10 +620,11 @@
             selection.transition()
                 .duration(transitionDuration)
 				.ease("linear")
-                .attr("cx", function(d, i) { 
-                    var xTimeVal = xMap(d);
-                    return (xTimeVal);
-                })
+                // .attr("cx", function(d, i) { 
+                //     var xTimeVal = xMap(d);
+                //     return (xTimeVal);
+                // })
+                 .attr("cx", (d) => {return d.x})
                 // .attr("fill", function(d, i) { return colorScale(d.event_summary['group']) })
 
             // currentTimeLine.transition().attr("d", function() {
@@ -814,6 +853,61 @@
     //     .style("font-weight", 'undefined')
     //     .style("display", 'block');
     }
+
+
+function tick(e) {
+  for ( i = 0; i < mentions.length; i++ ) {
+    var node = mentions[i];
+    /*
+     * Animate the radius via the tick.
+     *
+     * Typically this would be performed as a transition on the SVG element itself,
+     * but since this is a static force layout, we must perform it on the node.
+     */
+    // node.radius = 20;//node.idealradius - node.idealradius * e.alpha * 10;
+    // node = moveTowardDataPosition(.2 * e.alpha)(node);
+    node = collide(.5)(node);
+    node.cx = node.x;
+    node.cy = node.y;
+  }
+}
+  function moveTowardDataPosition(alpha) {
+    return function(d) {
+      d.x += (d.idealcx - d.x) * alpha;
+      d.y += (d.idealcy - d.y) * alpha * 3;
+      return d;
+    };
+  }
+
+  // Resolve collisions between nodes.
+  function collide(alpha) {
+    var padding = 5;
+    var quadtree = d3.geom.quadtree(mentions);
+    return function(d) {
+      var r = d.radius + padding,
+          nx1 = d.x - r,
+          nx2 = d.x + r,
+          ny1 = d.y - r,
+          ny2 = d.y + r;
+      quadtree.visit(function(quad, x1, y1, x2, y2) {
+        if (quad.point && (quad.point !== d)) {
+          var x = d.x - quad.point.x,
+              y = d.y - quad.point.y,
+              l = Math.sqrt(x * x + y * y),
+              r = d.radius + quad.point.radius + padding;// + (d.color !== quad.point.color) * padding;
+          if (l < r) {
+            l = (l - r) / l * alpha;
+            d.x -= x *= l;
+            d.y -= y *= l;
+            quad.point.x += x;
+            quad.point.y += y;
+          }
+        }
+        return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+      });
+      return d;
+    };
+  }
 
   function pointInPolygon (point, vs) {
     var xi, xj, i, intersect,
