@@ -3,8 +3,8 @@ h1 {
     color: white;
     background:#3b5998;
     margin: 0px;
-    height: 50px;
-    line-height: 50px;    
+    height: 40px;
+    line-height: 40px;    
 }
 
 body {
@@ -114,4 +114,8 @@ svg {
     stroke: grey;
     fill: black;
     fill-opacity: 0.2;
+}
+
+.time-inputs {
+  margin-left: 10px;
 }
