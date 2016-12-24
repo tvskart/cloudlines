@@ -254,6 +254,8 @@
                 });
         })
         .on('mouseover', function() {
+            //extra???
+            //highlight which line we are on
             d3.select(".hover-line")
                 .style("opacity", "1");
         })
@@ -717,7 +719,7 @@
   //Highlight the common story - right now effect is a red stroke.. should make it better..
   function highlight(article) {
     var story_id = _.get(article, 'story_id.$oid')
-
+    var story_sector = yValue(article);
     //Show another view for this story id.. via function call here!!!
 
 
@@ -728,6 +730,11 @@
             .style("stroke", "red")
             .style('stroke-width', '10')
           console.log('highlight called', story_id, selectedStory);
+
+    objects.selectAll(".dot")
+        // .style("opacity", function(d, i) { return opacityScale(d.event_impact_score['overall']) })
+        .filter((d) => {return yValue(d) != story_sector})
+            .style("opacity", "0.1")
 
     if (selectedStory && (story_id == selectedStory)) {
         //click action must show only mentions in list
@@ -760,7 +767,8 @@
         var story_id = _.get(article, 'story_id.$oid')     
         if (!selectedStory) {//un-click or no story is clicked mode
             objects.selectAll(".dot")
-                .style("stroke", undefined);
+                .style("stroke", undefined)
+                .style("opacity", function(d, i) { return opacityScale(d.event_impact_score['overall']) })
                 //show all stories again
             storyview.selectAll(".item")
                 .style("font-weight", 'normal')
