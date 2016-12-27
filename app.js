@@ -34,7 +34,7 @@ app.get('/', (req, res) => {
     res.render('index');
 })
 
-app.listen(3000, 'localhost', () => {
+app.listen(8080, 'localhost', () => {
   console.log('App listening on http://localhost:3000');
   api.runStream(); //refreshes stream.json file periodically
 })
